@@ -16,8 +16,9 @@ local menubar = require("menubar")
 local hotkeys_popup = require("awful.hotkeys_popup")
 -- Enable hotkeys help widget for VIM and other apps
 -- when client with a matching name is opened:
-require("awful.hotkeys_popup.keys")
-xdg_menu = require("archmenu")
+--require("awful.hotkeys_popup.keys")
+local freedesktop = require("freedesktop")
+
 
 -- {{{ Error handling
 -- Check if awesome encountered an error during startup and fell back to
@@ -52,6 +53,7 @@ beautiful.init("/home/metz/.config/awesome/theme.lua")
 -- This is used later as the default terminal and editor to run.
 terminal = "alacritty"
 browser = "chromium"
+youtube = "freetube"
 editor = os.getenv("EDITOR") or "vim"
 editor_cmd = terminal .. " -e " .. editor
 
@@ -67,16 +69,16 @@ awful.layout.layouts = {
     awful.layout.suit.floating,
     awful.layout.suit.spiral,
     --  awful.layout.suit.tile,
-    awful.layout.suit.tile.left,
+    --  awful.layout.suit.tile.left,
     awful.layout.suit.fair,
     -- awful.layout.suit.tile.top,
     awful.layout.suit.tile.bottom,
     -- awful.layout.suit.fair.horizontal,
     -- awful.layout.suit.spiral.dwindle,
-    awful.layout.suit.max,
-    --  awful.layout.suit.max.fullscreen,
-    --  awful.layout.suit.magnifier,
-    --  awful.layout.suit.corner.nw,
+    -- awful.layout.suit.max,
+    -- awful.layout.suit.max.fullscreen,
+    -- awful.layout.suit.magnifier,
+    -- awful.layout.suit.corner.nw,
     -- awful.layout.suit.corner.ne,
     -- awful.layout.suit.corner.sw,
     -- awful.layout.suit.corner.se,
@@ -86,10 +88,10 @@ awful.layout.layouts = {
 -- {{{ Menu
 -- Create a launcher widget and a main menu
 
-briskmenu = { xdgmenu }
 myfavoritesmenu = {
-	{ "terminal", terminal },
-	{ "browser", browser }
+	{ "Terminal", terminal },
+	{ "Browser", browser   },
+	{ "Youtube", youtube  }
 }
 
 myawesomemenu = {
@@ -99,16 +101,19 @@ myawesomemenu = {
    { "restart", awesome.restart },
 }
 
-mymainmenu = awful.menu({ items = { { "favorites", myfavoritesmenu },
-                                    { "applications", xdgmenu },
-				    { "awesome", myawesomemenu },
-                                    { "quit", function() awesome.quit() end },
-			    }
-
-                        })
+mymainmenu = freedesktop.menu.build({
+	before = {
+		 { "Favorites", myfavoritesmenu                      },
+	},
+	after = {
+	         { "Awesome", myawesomemenu, beautiful.awesome_icon },
+                 { "Quit", function() awesome.quit() end            },
+	},
+        skip_items = { "Avahi", "Volume Icon", "Desktop Preferences" }
+                                     })
 
 mylauncher = awful.widget.launcher({  image = beautiful.awesome_icon,
-                                      menu = mymainmenu })
+                                      menu 	= mymainmenu })
 
 -- Menubar configuration
 menubar.utils.terminal = terminal -- Set the terminal for applications that require it
@@ -265,6 +270,9 @@ globalkeys = gears.table.join(
     awful.key({ modkey,           }, "w", function () mymainmenu:show() end,
               {description = "show main menu", group = "awesome"}),
 
+    awful.key({ }, "Print", function () awful.util.spawn("scrot -e 'mv $f ~/screenshots/ 2>/dev/null'", false)
+    end),
+
     -- Layout manipulation
     awful.key({ modkey, "Shift"   }, "j", function () awful.client.swap.byidx(  1)    end,
               {description = "swap with next client by index", group = "client"}),
@@ -290,7 +298,7 @@ globalkeys = gears.table.join(
               {description = "open a terminal", group = "launcher"}),
     awful.key({ modkey, "Control" }, "r", awesome.restart,
               {description = "reload awesome", group = "awesome"}),
-    awful.key({ modkey, "Shift"   }, "q", awesome.quit,
+    awful.key({ modkey, "Control"   }, "q", awesome.quit,
               {description = "quit awesome", group = "awesome"}),
 
     awful.key({ modkey,           }, "l",     function () awful.tag.incmwfact( 0.05)          end,
@@ -553,7 +561,7 @@ awful.rules.rules = {
 client.connect_signal("manage", function (c)
     -- Set the windows at the slave,
     -- i.e. put it at the end of others instead of setting it master.
-    -- if not awesome.startup then awful.client.setslave(c) end
+    if not awesome.startup then awful.client.setslave(c) end
 
     if awesome.startup
       and not c.size_hints.user_position
@@ -595,12 +603,12 @@ client.connect_signal("request::titlebars", function(c)
             layout  = wibox.layout.flex.horizontal
         },
         { -- Right
-          --  awful.titlebar.widget.floatingbutton (c),
-            awful.titlebar.widget.minimizebutton   (c),
-	        awful.titlebar.widget.maximizedbutton  (c),
-          --  awful.titlebar.widget.stickybutton   (c),
-          --  awful.titlebar.widget.ontopbutton    (c),
-            awful.titlebar.widget.closebutton      (c),
+          --  awful.titlebar.widget.floatingbutton   (c),
+              awful.titlebar.widget.minimizebutton   (c),
+	      awful.titlebar.widget.maximizedbutton  (c),
+          --  awful.titlebar.widget.stickybutton     (c),
+          --  awful.titlebar.widget.ontopbutton      (c),
+            awful.titlebar.widget.closebutton        (c),
             layout = wibox.layout.fixed.horizontal()
         },
         layout = wibox.layout.align.horizontal
@@ -616,9 +624,15 @@ client.connect_signal("focus", function(c) c.border_color = beautiful.border_foc
 client.connect_signal("unfocus", function(c) c.border_color = beautiful.border_normal end)
 -- }}}
 
+--DESKTOP ICONS
+--for s in screen do
+--	freedesktop.desktop.add_icons({screen = s})
+--end
+
 --AUTOSTART 
---awful.spawn.with_shell("compton")
-awful.spawn.with_shell("mate-volume-control-status-icon")
-awful.spawn.with_shell("nm-applet")
-awful.spawn.with_shell("mate-power-manager")
+--awful.spawn.with_shell("picom")
+--awful.spawn.with_shell("volumeicon")
+--awful.spawn.with_shell("nm-applet")
+--awful.spawn.with_shell("powerkit")
+awful.spawn.with_shell("nitrogen --restore")
 
